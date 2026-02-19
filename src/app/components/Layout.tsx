@@ -9,7 +9,7 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
-            <a href="#" className="flex items-center space-x-2 group">
+            <a href="https://ext.keizie.com" className="flex items-center space-x-2 group">
               <div className="p-1.5 bg-brand-accent/20 rounded-lg group-hover:bg-brand-accent/30 transition-colors">
                 <Chrome className="w-6 h-6 text-brand-accent" />
               </div>
