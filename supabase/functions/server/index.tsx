@@ -192,4 +192,18 @@ app.post(`${baseRoute}/support/reply`, async (c) => {
   }
 });
 
+app.delete(`${baseRoute}/support/:id`, async (c) => {
+  const user = await getUser(c);
+  if (!user) return c.json({ error: 'Unauthorized' }, 401);
+
+  const id = c.req.param('id');
+  try {
+    await kv.del(`support:${id}`);
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting ticket:', error);
+    return c.json({ error: 'Failed to delete ticket' }, 500);
+  }
+});
+
 Deno.serve(app.fetch);

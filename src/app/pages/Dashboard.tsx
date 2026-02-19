@@ -69,8 +69,11 @@ export function Dashboard() {
     }
   };
 
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+
   const handleReply = async (ticketId: string, replyText: string) => {
     if (!session) return;
+    setReplyingTo(ticketId);
     try {
       const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-db9c8b65/support/reply`, {
         method: 'POST',
@@ -80,11 +83,40 @@ export function Dashboard() {
         },
         body: JSON.stringify({ ticketId, reply: replyText })
       });
+      
       if (response.ok) {
+        const el = document.getElementById(`reply-${ticketId}`) as HTMLTextAreaElement;
+        if (el) el.value = '';
         loadSupportTickets();
+      } else {
+        const errData = await response.json();
+        alert(`Failed to send reply: ${errData.error || response.statusText}`);
       }
     } catch (err) {
-      alert("Failed to send reply");
+      console.error("Reply error:", err);
+      alert("Failed to send reply. Check console for details.");
+    } finally {
+      setReplyingTo(null);
+    }
+  };
+
+  const handleDeleteTicket = async (id: string) => {
+    if (!session || !confirm("Are you sure you want to delete this message?")) return;
+    try {
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-db9c8b65/support/${id}`, {
+        method: 'DELETE',
+        headers: { 
+          'Authorization': `Bearer ${session.access_token}` 
+        }
+      });
+      if (response.ok) {
+        loadSupportTickets();
+      } else {
+        const errData = await response.json();
+        alert(`Failed to delete: ${errData.error || response.statusText}`);
+      }
+    } catch (err) {
+      alert("Failed to delete message");
     }
   };
 
@@ -330,6 +362,13 @@ export function Dashboard() {
                         <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${ticket.reply ? 'bg-green-500/10 text-green-500' : 'bg-yellow-500/10 text-yellow-500'}`}>
                           {ticket.reply ? 'Answered' : 'Pending'}
                         </span>
+                        <button 
+                          onClick={() => handleDeleteTicket(ticket.id)}
+                          className="p-2 ml-2 bg-white/5 hover:bg-red-500/10 text-white/30 hover:text-red-500 rounded-lg transition-all"
+                          title="Delete Message"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                       <p className="text-white/70 bg-white/5 p-4 rounded-xl italic">"{ticket.message}"</p>
                       
@@ -347,17 +386,17 @@ export function Dashboard() {
                             rows={3}
                           />
                           <button 
+                            disabled={replyingTo === ticket.id}
                             onClick={() => {
                               const el = document.getElementById(`reply-${ticket.id}`) as HTMLTextAreaElement;
                               if (el.value.trim()) {
                                 handleReply(ticket.id, el.value.trim());
-                                el.value = '';
                               }
                             }}
-                            className="px-6 py-3 bg-brand-accent hover:bg-brand-accent/90 rounded-xl font-bold transition-all flex items-center space-x-2"
+                            className="px-6 py-3 bg-brand-accent hover:bg-brand-accent/90 disabled:opacity-50 rounded-xl font-bold transition-all flex items-center space-x-2"
                           >
-                            <Save className="w-4 h-4" />
-                            <span>Post Answer</span>
+                            {replyingTo === ticket.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                            <span>{replyingTo === ticket.id ? 'Posting...' : 'Post Answer'}</span>
                           </button>
                         </div>
                       )}
