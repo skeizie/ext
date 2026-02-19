@@ -1,35 +1,57 @@
-import { supabase } from "./supabaseClient";
-import { publicAnonKey } from "../../utils/supabase/info";
+import { projectId, publicAnonKey } from "../../utils/supabase/info";
 
-const FUNCTION_NAME = 'make-server-db9c8b65';
+const BASE_URL = `https://${projectId}.supabase.co/functions/v1/make-server-db9c8b65`;
 
-async function apiFetch(path: string, options: any = {}) {
-  // Extract path and method
-  const method = options.method || 'GET';
-  const body = options.body ? JSON.parse(options.body) : undefined;
+async function apiFetch(path: string, options: RequestInit = {}) {
+  const url = `${BASE_URL}${path}`;
   
-  // Extract user token from headers if present
+  // Extract user token if it was passed in the Authorization header
   let userToken = '';
-  const authHeader = options.headers?.['Authorization'] || options.headers?.['x-user-token'];
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    userToken = authHeader.split(' ')[1];
-  } else if (authHeader && authHeader !== publicAnonKey) {
-    userToken = authHeader;
+  const providedAuth = (options.headers as any)?.['Authorization'];
+  if (providedAuth && providedAuth.startsWith('Bearer ') && providedAuth !== `Bearer ${publicAnonKey}`) {
+    userToken = providedAuth.split(' ')[1];
   }
 
-  // Use the official Supabase invoke method which handles gateway auth correctly
-  const { data, error } = await supabase.functions.invoke(`${FUNCTION_NAME}${path}`, {
-    method,
-    body,
-    headers: userToken ? { 'x-user-token': userToken } : {}
+  // Ensure headers include the apikey and a "gateway-safe" Authorization header
+  const headers: Record<string, string> = {
+    'apikey': publicAnonKey,
+    'Authorization': `Bearer ${publicAnonKey}`, // Always use anon key for gateway passage
+    ...Object.fromEntries(Object.entries(options.headers || {})),
+  };
+
+  // If we have a real user token, put it in a custom header the gateway won't block
+  if (userToken) {
+    headers['x-user-token'] = userToken;
+    headers['Authorization'] = `Bearer ${publicAnonKey}`; // Override back to anon for gateway
+  }
+
+  const response = await fetch(url, {
+    ...options,
+    headers,
   });
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    
+    // If 404, it might need the manual prefix required by some environments
+    if (response.status === 404 && !path.startsWith('/make-server-db9c8b65')) {
+      const retryUrl = `${BASE_URL}/make-server-db9c8b65${path}`;
+      const retryResponse = await fetch(retryUrl, { ...options, headers });
+      if (retryResponse.ok) return retryResponse.json();
+    }
 
-  if (error) {
-    console.error(`API Error [${method}] ${path}:`, error);
-    throw new Error(error.message || `Request failed`);
+    console.error(`API Error [${response.status}] ${url}:`, errorText);
+    
+    let errorMessage = errorText;
+    try {
+      const parsed = JSON.parse(errorText);
+      errorMessage = parsed.message || parsed.error || errorText;
+    } catch (e) { }
+    
+    throw new Error(errorMessage || `Request failed with status ${response.status}`);
   }
-
-  return data;
+  
+  return response.json();
 }
 
 export async function fetchExtensions() {
