@@ -10,7 +10,7 @@ import {
   Loader2,
   AlertCircle
 } from "lucide-react";
-import { projectId, publicAnonKey } from "/utils/supabase/info";
+import { fetchTickets, submitTicket } from "../api";
 
 export function Contact() {
   const [tickets, setTickets] = useState<any[]>([]);
@@ -32,10 +32,7 @@ export function Contact() {
 
   const loadTickets = async () => {
     try {
-      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-db9c8b65/support`, {
-        headers: { 'Authorization': `Bearer ${publicAnonKey}` }
-      });
-      const data = await res.json();
+      const data = await fetchTickets();
       setTickets(data);
     } catch (err) {
       console.error("Failed to load forum posts");
@@ -56,26 +53,14 @@ export function Contact() {
 
     setSubmitting(true);
     try {
-      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-db9c8b65/support`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${publicAnonKey}`
-        },
-        body: JSON.stringify({ email, subject, message })
-      });
-      
-      if (res.ok) {
-        setSuccess(true);
-        setEmail("");
-        setSubject("");
-        setMessage("");
-        loadTickets(); // Refresh list
-      } else {
-        throw new Error("Failed to send message");
-      }
-    } catch (err) {
-      setError("Something went wrong. Please try again later.");
+      await submitTicket({ email, subject, message });
+      setSuccess(true);
+      setEmail("");
+      setSubject("");
+      setMessage("");
+      loadTickets(); // Refresh list
+    } catch (err: any) {
+      setError(err.message || "Something went wrong. Please try again later.");
     } finally {
       setSubmitting(false);
     }

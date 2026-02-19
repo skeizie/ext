@@ -13,11 +13,19 @@ import {
   Loader2,
   MessageSquare
 } from "lucide-react";
-import { fetchExtensions, saveExtension, deleteExtension, migrateData } from "../api";
+import { 
+  fetchExtensions, 
+  saveExtension, 
+  deleteExtension, 
+  migrateData,
+  fetchTickets,
+  replyToTicket,
+  deleteTicket
+} from "../api";
 import { ChromeExtension, extensions as initialExtensions } from "../data";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { supabase } from "../supabaseClient";
-import { projectId, publicAnonKey } from "/utils/supabase/info";
+import { projectId, publicAnonKey } from "../../../utils/supabase/info";
 
 export function Dashboard() {
   const [extensions, setExtensions] = useState<ChromeExtension[]>([]);
@@ -59,10 +67,7 @@ export function Dashboard() {
 
   const loadSupportTickets = async () => {
     try {
-      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-db9c8b65/support`, {
-        headers: { 'Authorization': `Bearer ${publicAnonKey}` }
-      });
-      const data = await res.json();
+      const data = await fetchTickets();
       setSupportTickets(data);
     } catch (err) {
       console.error("Failed to load tickets:", err);
@@ -75,26 +80,13 @@ export function Dashboard() {
     if (!session) return;
     setReplyingTo(ticketId);
     try {
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-db9c8b65/support/reply`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}` 
-        },
-        body: JSON.stringify({ ticketId, reply: replyText })
-      });
-      
-      if (response.ok) {
-        const el = document.getElementById(`reply-${ticketId}`) as HTMLTextAreaElement;
-        if (el) el.value = '';
-        loadSupportTickets();
-      } else {
-        const errData = await response.json();
-        alert(`Failed to send reply: ${errData.error || response.statusText}`);
-      }
-    } catch (err) {
+      await replyToTicket(ticketId, replyText, session.access_token);
+      const el = document.getElementById(`reply-${ticketId}`) as HTMLTextAreaElement;
+      if (el) el.value = '';
+      loadSupportTickets();
+    } catch (err: any) {
       console.error("Reply error:", err);
-      alert("Failed to send reply. Check console for details.");
+      alert(`Failed to send reply: ${err.message}`);
     } finally {
       setReplyingTo(null);
     }
@@ -103,20 +95,10 @@ export function Dashboard() {
   const handleDeleteTicket = async (id: string) => {
     if (!session || !confirm("Are you sure you want to delete this message?")) return;
     try {
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-db9c8b65/support/${id}`, {
-        method: 'DELETE',
-        headers: { 
-          'Authorization': `Bearer ${session.access_token}` 
-        }
-      });
-      if (response.ok) {
-        loadSupportTickets();
-      } else {
-        const errData = await response.json();
-        alert(`Failed to delete: ${errData.error || response.statusText}`);
-      }
-    } catch (err) {
-      alert("Failed to delete message");
+      await deleteTicket(id, session.access_token);
+      loadSupportTickets();
+    } catch (err: any) {
+      alert(`Failed to delete: ${err.message}`);
     }
   };
 
