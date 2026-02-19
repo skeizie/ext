@@ -3,26 +3,41 @@ import { projectId, publicAnonKey } from "../../utils/supabase/info";
 const BASE_URL = `https://${projectId}.supabase.co/functions/v1/make-server-db9c8b65`;
 
 async function apiFetch(path: string, options: RequestInit = {}) {
-  // Try the path directly as per standard Supabase routing
   const url = `${BASE_URL}${path}`;
+  
+  // Ensure headers include the apikey for Supabase environment recognition
+  const headers = {
+    'apikey': publicAnonKey,
+    ...options.headers,
+  };
+
   const response = await fetch(url, {
     ...options,
-    headers: {
-      ...options.headers,
-    },
+    headers,
   });
   
   if (!response.ok) {
+    const errorText = await response.text();
+    
     // If 404, it might need the manual prefix required by some environments
     if (response.status === 404 && !path.startsWith('/make-server-db9c8b65')) {
       const retryUrl = `${BASE_URL}/make-server-db9c8b65${path}`;
-      const retryResponse = await fetch(retryUrl, options);
+      const retryResponse = await fetch(retryUrl, { ...options, headers });
       if (retryResponse.ok) return retryResponse.json();
     }
 
-    const errorText = await response.text();
     console.error(`API Error [${response.status}] ${url}:`, errorText);
-    throw new Error(errorText || `Request failed with status ${response.status}`);
+    
+    // Attempt to parse JSON error if possible
+    let errorMessage = errorText;
+    try {
+      const parsed = JSON.parse(errorText);
+      errorMessage = parsed.message || parsed.error || errorText;
+    } catch (e) {
+      // Not JSON
+    }
+    
+    throw new Error(errorMessage || `Request failed with status ${response.status}`);
   }
   
   return response.json();

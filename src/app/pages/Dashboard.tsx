@@ -76,11 +76,22 @@ export function Dashboard() {
 
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
 
+  const getFreshToken = async () => {
+    const { data: { session: freshSession }, error } = await supabase.auth.getSession();
+    if (error || !freshSession) {
+      navigate("/admin");
+      return null;
+    }
+    setSession(freshSession);
+    return freshSession.access_token;
+  };
+
   const handleReply = async (ticketId: string, replyText: string) => {
-    if (!session) return;
+    const token = await getFreshToken();
+    if (!token) return;
     setReplyingTo(ticketId);
     try {
-      await replyToTicket(ticketId, replyText, session.access_token);
+      await replyToTicket(ticketId, replyText, token);
       const el = document.getElementById(`reply-${ticketId}`) as HTMLTextAreaElement;
       if (el) el.value = '';
       loadSupportTickets();
@@ -93,9 +104,11 @@ export function Dashboard() {
   };
 
   const handleDeleteTicket = async (id: string) => {
-    if (!session || !confirm("Are you sure you want to delete this message?")) return;
+    if (!confirm("Are you sure you want to delete this message?")) return;
+    const token = await getFreshToken();
+    if (!token) return;
     try {
-      await deleteTicket(id, session.access_token);
+      await deleteTicket(id, token);
       loadSupportTickets();
     } catch (err: any) {
       alert(`Failed to delete: ${err.message}`);
@@ -108,14 +121,15 @@ export function Dashboard() {
   };
 
   const handleMigrate = async () => {
-    if (!session) return;
+    const token = await getFreshToken();
+    if (!token) return;
     setLoading(true);
     try {
-      await migrateData(initialExtensions, session.access_token);
+      await migrateData(initialExtensions, token);
       await loadExtensions();
       alert("Initial data migrated successfully!");
-    } catch (err) {
-      alert("Migration failed");
+    } catch (err: any) {
+      alert(`Migration failed: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -148,10 +162,12 @@ export function Dashboard() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!session || !editingExtension) return;
+    if (!editingExtension) return;
+    const token = await getFreshToken();
+    if (!token) return;
     setSaving(true);
     try {
-      await saveExtension(editingExtension, session.access_token);
+      await saveExtension(editingExtension, token);
       await loadExtensions();
       setIsModalOpen(false);
       setEditingExtension(null);
@@ -163,12 +179,14 @@ export function Dashboard() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!session || !confirm("Are you sure you want to delete this extension?")) return;
+    if (!confirm("Are you sure you want to delete this extension?")) return;
+    const token = await getFreshToken();
+    if (!token) return;
     try {
-      await deleteExtension(id, session.access_token);
+      await deleteExtension(id, token);
       await loadExtensions();
-    } catch (err) {
-      alert("Failed to delete");
+    } catch (err: any) {
+      alert(`Failed to delete: ${err.message}`);
     }
   };
 

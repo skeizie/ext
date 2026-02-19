@@ -17,7 +17,10 @@ export function Admin() {
     const checkStatus = async (retries = 3) => {
       try {
         const res = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-db9c8b65/status`, {
-          headers: { 'Authorization': `Bearer ${publicAnonKey}` }
+          headers: { 
+            'Authorization': `Bearer ${publicAnonKey}`,
+            'apikey': publicAnonKey
+          }
         });
         if (!res.ok) throw new Error("Status check failed");
         const data = await res.json();
@@ -52,7 +55,11 @@ export function Admin() {
       if (isSetup) {
         const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-db9c8b65/signup`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${publicAnonKey}` },
+          headers: { 
+            'Content-Type': 'application/json', 
+            'Authorization': `Bearer ${publicAnonKey}`,
+            'apikey': publicAnonKey
+          },
           body: JSON.stringify({ email, password, name: 'Admin' })
         });
         const result = await response.json();
