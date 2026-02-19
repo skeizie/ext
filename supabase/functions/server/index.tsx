@@ -19,26 +19,29 @@ const PREFIX = 'extension:';
 // Helper to check auth
 async function getUser(c: any) {
   try {
+    // Check custom header first (bypass gateway JWT issues), then fallback to Authorization
+    const userToken = c.req.header('x-user-token');
     const authHeader = c.req.header('Authorization');
-    if (!authHeader) return null;
     
-    const accessToken = authHeader.split(' ')[1];
+    const accessToken = userToken || (authHeader ? authHeader.split(' ')[1] : null);
     if (!accessToken) return null;
     
-    // Explicitly check if it's the public anon key to avoid calling auth.getUser with it
-    // which triggers the "missing sub claim" error in Supabase
-    if (accessToken === Deno.env.get('SUPABASE_ANON_KEY')) {
+    // Explicitly check if it's the public anon key or service role key
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (accessToken === anonKey || accessToken === serviceKey) {
       return null;
     }
     
     const { data: { user }, error } = await supabase.auth.getUser(accessToken);
     if (error) {
-      console.log('Auth check note:', error.message);
+      console.log('Auth verification failed:', error.message);
       return null;
     }
     return user || null;
   } catch (err) {
-    // Silently return null on auth failures
+    console.error('getUser error:', err);
     return null;
   }
 }

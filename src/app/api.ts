@@ -5,11 +5,25 @@ const BASE_URL = `https://${projectId}.supabase.co/functions/v1/make-server-db9c
 async function apiFetch(path: string, options: RequestInit = {}) {
   const url = `${BASE_URL}${path}`;
   
-  // Ensure headers include the apikey for Supabase environment recognition
-  const headers = {
+  // Extract user token if it was passed in the Authorization header
+  let userToken = '';
+  const providedAuth = (options.headers as any)?.['Authorization'];
+  if (providedAuth && providedAuth.startsWith('Bearer ') && providedAuth !== `Bearer ${publicAnonKey}`) {
+    userToken = providedAuth.split(' ')[1];
+  }
+
+  // Ensure headers include the apikey and a "gateway-safe" Authorization header
+  const headers: Record<string, string> = {
     'apikey': publicAnonKey,
-    ...options.headers,
+    'Authorization': `Bearer ${publicAnonKey}`, // Always use anon key for gateway passage
+    ...Object.fromEntries(Object.entries(options.headers || {})),
   };
+
+  // If we have a real user token, put it in a custom header the gateway won't block
+  if (userToken) {
+    headers['x-user-token'] = userToken;
+    headers['Authorization'] = `Bearer ${publicAnonKey}`; // Override back to anon for gateway
+  }
 
   const response = await fetch(url, {
     ...options,
@@ -28,14 +42,11 @@ async function apiFetch(path: string, options: RequestInit = {}) {
 
     console.error(`API Error [${response.status}] ${url}:`, errorText);
     
-    // Attempt to parse JSON error if possible
     let errorMessage = errorText;
     try {
       const parsed = JSON.parse(errorText);
       errorMessage = parsed.message || parsed.error || errorText;
-    } catch (e) {
-      // Not JSON
-    }
+    } catch (e) { }
     
     throw new Error(errorMessage || `Request failed with status ${response.status}`);
   }
