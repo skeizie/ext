@@ -41,7 +41,7 @@ export function ProductCard({
       <div className="p-8 flex-1 flex flex-col">
         <div className="flex justify-between items-start mb-4">
           <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 rounded-xl overflow-hidden ring-1 ring-white/10 group-hover:ring-brand-accent/50 transition-all">
+            <div className="w-12 h-12 overflow-hidden transition-all">
               <ImageWithFallback src={extension.icon} alt={extension.name} className="w-full h-full object-cover" />
             </div>
             <div>
@@ -128,8 +128,8 @@ function ProductOverlay({ extension, onClose }: { extension: ChromeExtension, on
             <div className="absolute bottom-0 left-0 w-full p-8 md:p-12">
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div className="flex items-center space-x-6">
-                  <div className="w-20 h-20 md:w-24 md:h-24 rounded-[2rem] overflow-hidden ring-4 ring-white/10 shadow-2xl">
-                    <ImageWithFallback src={extension.icon} alt={extension.name} className="w-full h-full object-cover" />
+                  <div className="w-20 h-20 md:w-24 md:h-24 overflow-hidden shadow-2xl">
+                    <ImageWithFallback src={extension.icon} alt={extension.name} className="w-full h-full object-contain" />
                   </div>
                   <div>
                     <h2 className="text-3xl md:text-5xl font-black tracking-tight text-white mb-2">{extension.name}</h2>

@@ -11,7 +11,9 @@ import {
   X,
   Save,
   Loader2,
-  MessageSquare
+  MessageSquare,
+  ArrowUp,
+  ArrowDown
 } from "lucide-react";
 import { 
   fetchExtensions, 
@@ -20,7 +22,8 @@ import {
   migrateData,
   fetchTickets,
   replyToTicket,
-  deleteTicket
+  deleteTicket,
+  reorderExtensions
 } from "../api";
 import { ChromeExtension, extensions as initialExtensions } from "../data";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
@@ -57,11 +60,40 @@ export function Dashboard() {
   const loadExtensions = async () => {
     try {
       const data = await fetchExtensions();
-      setExtensions(data);
+      const sorted = data.sort((a: any, b: any) => (a.sortOrder || 0) - (b.sortOrder || 0));
+      setExtensions(sorted);
     } catch (err) {
       console.error("Failed to load extensions:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleMove = async (index: number, direction: 'up' | 'down') => {
+    const newExtensions = [...extensions];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    
+    if (targetIndex < 0 || targetIndex >= newExtensions.length) return;
+    
+    // Swap
+    [newExtensions[index], newExtensions[targetIndex]] = [newExtensions[targetIndex], newExtensions[index]];
+    
+    // Update sortOrder for all to be safe
+    const updatedExtensions = newExtensions.map((ext, i) => ({
+      ...ext,
+      sortOrder: i
+    }));
+    
+    setExtensions(updatedExtensions);
+    
+    const token = await getFreshToken();
+    if (!token) return;
+    
+    try {
+      await reorderExtensions(updatedExtensions, token);
+    } catch (err) {
+      console.error("Failed to save new order:", err);
+      loadExtensions(); // Revert on error
     }
   };
 
@@ -146,7 +178,8 @@ export function Dashboard() {
       installCount: "0",
       rating: 5,
       url: "#",
-      features: [""]
+      features: [""],
+      sortOrder: extensions.length
     });
     setIsModalOpen(true);
   };
@@ -296,9 +329,9 @@ export function Dashboard() {
                     </div>
                   </div>
                 ) : (
-                  extensions.map((ext) => (
+                  extensions.map((ext, index) => (
                     <div key={ext.id} className="bg-card border border-white/5 p-6 rounded-2xl flex items-center group hover:border-brand-accent/30 transition-all">
-                      <div className="w-16 h-16 rounded-xl overflow-hidden ring-1 ring-white/10 shrink-0">
+                      <div className="w-16 h-16 overflow-hidden shrink-0">
                         <ImageWithFallback src={ext.icon} alt={ext.name} className="w-full h-full object-cover" />
                       </div>
                       <div className="ml-6 flex-1">
@@ -311,6 +344,24 @@ export function Dashboard() {
                         <p className="text-sm text-muted-foreground line-clamp-1">{ext.tagline}</p>
                       </div>
                       <div className="flex items-center space-x-3 ml-6">
+                        <div className="flex flex-col space-y-1">
+                          <button 
+                            disabled={index === 0}
+                            onClick={() => handleMove(index, 'up')}
+                            className="p-1.5 bg-white/5 hover:bg-white/10 text-white/50 hover:text-white disabled:opacity-30 disabled:hover:bg-white/5 rounded transition-all"
+                            title="Move Up"
+                          >
+                            <ArrowUp className="w-4 h-4" />
+                          </button>
+                          <button 
+                            disabled={index === extensions.length - 1}
+                            onClick={() => handleMove(index, 'down')}
+                            className="p-1.5 bg-white/5 hover:bg-white/10 text-white/50 hover:text-white disabled:opacity-30 disabled:hover:bg-white/5 rounded transition-all"
+                            title="Move Down"
+                          >
+                            <ArrowDown className="w-4 h-4" />
+                          </button>
+                        </div>
                         <button 
                           onClick={() => openViewModal(ext)}
                           className="p-3 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white rounded-xl transition-all"
@@ -415,7 +466,7 @@ export function Dashboard() {
           <div className="bg-card border border-white/10 w-full max-w-5xl h-full max-h-[90vh] rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in duration-300">
             <header className="p-8 border-b border-white/5 flex justify-between items-center bg-white/2 shrink-0">
               <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 rounded-xl overflow-hidden ring-1 ring-white/10">
+                <div className="w-12 h-12 overflow-hidden">
                   <ImageWithFallback src={viewingExtension.icon} alt={viewingExtension.name} className="w-full h-full object-cover" />
                 </div>
                 <div>

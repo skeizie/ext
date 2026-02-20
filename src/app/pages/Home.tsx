@@ -15,7 +15,8 @@ export function Home() {
       try {
         const data = await fetchExtensions();
         if (data && data.length > 0) {
-          setExtensions(data);
+          const sorted = data.sort((a: any, b: any) => (a.sortOrder || 0) - (b.sortOrder || 0));
+          setExtensions(sorted);
         }
       } catch (err) {
         console.error("Failed to fetch dynamic extensions, using local fallback", err);

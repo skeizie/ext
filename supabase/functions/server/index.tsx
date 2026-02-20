@@ -97,6 +97,24 @@ const extensionsDelete = async (c: any) => {
 app.delete(`${baseRoute}/extensions/:id`, extensionsDelete);
 app.delete('/extensions/:id', extensionsDelete);
 
+const extensionsReorder = async (c: any) => {
+  const user = await getUser(c);
+  if (!user) return c.json({ error: 'Unauthorized' }, 401);
+
+  try {
+    const { extensions } = await c.req.json();
+    for (const ext of extensions) {
+      await kv.set(`${PREFIX}${ext.id}`, ext);
+    }
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Error reordering extensions:', error);
+    return c.json({ error: 'Failed to reorder extensions' }, 500);
+  }
+};
+app.post(`${baseRoute}/extensions/reorder`, extensionsReorder);
+app.post('/extensions/reorder', extensionsReorder);
+
 app.post(`${baseRoute}/signup`, async (c) => {
   try {
     const initialized = await kv.get('system:initialized');

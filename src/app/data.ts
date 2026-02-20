@@ -10,6 +10,7 @@ export interface ChromeExtension {
   rating: number;
   url: string;
   features: string[];
+  sortOrder: number;
 }
 
 export const extensions: ChromeExtension[] = [
@@ -33,7 +34,8 @@ export const extensions: ChromeExtension[] = [
       "Brightness & Contrast control",
       "Scheduling (Auto-dark at night)",
       "Sync across all your devices"
-    ]
+    ],
+    sortOrder: 0
   },
   {
     id: "bys",
@@ -55,7 +57,8 @@ export const extensions: ChromeExtension[] = [
       "Brightness & Contrast control",
       "Scheduling (Auto-dark at night)",
       "Sync across all your devices"
-    ]
+    ],
+    sortOrder: 1
   },
   {
     id: "repinia",
@@ -77,7 +80,8 @@ export const extensions: ChromeExtension[] = [
       "Deep focus mode (blocks distracting sites)",
       "Daily productivity statistics",
       "Customizable new tab page"
-    ]
+    ],
+    sortOrder: 2
   },
   {
     id: "chatgptrtl",
@@ -99,6 +103,7 @@ export const extensions: ChromeExtension[] = [
       "Color history palette",
       "Export to CSS, SASS, and Figma",
       "Auto-detect webpage color scheme"
-    ]
+    ],
+    sortOrder: 3
   }
 ];

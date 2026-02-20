@@ -82,6 +82,17 @@ export async function deleteExtension(id: string, accessToken: string) {
   });
 }
 
+export async function reorderExtensions(extensions: any[], accessToken: string) {
+  return apiFetch('/extensions/reorder', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ extensions }),
+  });
+}
+
 export async function migrateData(extensions: any[], accessToken: string) {
   return apiFetch('/migrate', {
     method: 'POST',
