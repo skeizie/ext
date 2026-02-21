@@ -198,7 +198,7 @@ function ProductOverlay({ extension, onClose }: { extension: ChromeExtension, on
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-white/50">Status</span>
-                    <span className="text-xl font-bold text-green-500">Verified</span>
+                    <span className="text-xl font-bold text-green-500">Published</span>
                   </div>
                 </div>
                 
@@ -225,7 +225,7 @@ function ProductOverlay({ extension, onClose }: { extension: ChromeExtension, on
                 </div>
                 <div className="text-left">
                   <p className="text-xs font-bold uppercase tracking-widest text-white/40 leading-none">Developer</p>
-                  <p className="text-sm font-bold text-white/80">Stripe Verified Merchant</p>
+                  <p className="text-sm font-bold text-white/80">Featured on Chrome Web Store</p>
                 </div>
               </div>
             </div>
