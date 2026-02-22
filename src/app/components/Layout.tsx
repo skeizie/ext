@@ -104,7 +104,7 @@ export function Footer() {
               <a href="#" className="text-muted-foreground hover:text-brand-accent transition-colors"><Github className="w-5 h-5" /></a>
             </div>
             <div className="text-sm text-muted-foreground">
-              <p>Merchant ID: STR-8829-EXT</p>
+              <p>Merchant ID: ***-****-***</p>
               <a href="/contact" className="hover:text-brand-accent transition-colors">Contact Support</a>
             </div>
           </div>
